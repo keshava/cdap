@@ -307,6 +307,26 @@ Cypress.Commands.add('move_node', (node: INodeIdentifier | string, toX: number, 
     .trigger('mouseup', { force: true });
 });
 
+Cypress.Commands.add('select_from_to', (from: INodeIdentifier, to: INodeIdentifier) => {
+  let fromNodeElement, toNodeElement;
+  cy.get_node(from).then(sElement => {
+    fromNodeElement = sElement;
+    cy.get_node(to).then(tElement => {
+      toNodeElement = tElement;
+      const { x: fromX, y: fromY } = fromNodeElement[0].getBoundingClientRect();
+      const { x: toX, y: toY, width: toWidth, height: toHeight } = toNodeElement[0].getBoundingClientRect();
+      console.log('fromx, fromy, tox, toy', (fromX - 10), (fromY - 10), (toX + toWidth + 10), (toY + toHeight + 10))
+      cy.get('body').type('{shift}', { release: false });
+      cy.get('#diagram-container')
+        .trigger('mousedown', { which: 1, force: true, clientX: (fromX - 10), clientY: (fromY - 10) });
+      cy.get('#diagram-container')
+        .trigger('mousemove', { which: 1, clientX: (toX + toWidth + 10), clientY: (toY + toHeight + 10) })
+        .trigger('mouseup', { force: true });
+      cy.get('body').type('{shift}', { release: true });
+    });
+  });
+});
+
 Cypress.Commands.add('connect_two_nodes', (
   sourceNode: INodeIdentifier,
   targetNode: INodeIdentifier,
@@ -351,6 +371,7 @@ Cypress.Commands.add('create_simple_pipeline', () => {
 
   cy.connect_two_nodes(sourceNodeId, transformNodeId, getGenericEndpoint);
   cy.connect_two_nodes(transformNodeId, sinkNodeId, getGenericEndpoint);
+  return cy.wrap({ sourceNodeId, transformNodeId, sinkNodeId });
 });
 
 Cypress.Commands.add('create_complex_pipeline', () => {
@@ -415,6 +436,16 @@ Cypress.Commands.add('create_complex_pipeline', () => {
   cy.get('[data-cy="pipeline-clean-up-graph-control"]').click();
   cy.get('[data-cy="pipeline-fit-to-screen-control"]').click();
 
+  return cy.wrap({
+    sourceNodeId1,
+    sourceNodeId2,
+    transformNodeId1,
+    transformNodeId2,
+    joinerNodeId,
+    conditionNodeId,
+    sinkNodeId1,
+    sinkNodeId2
+  });
 });
 
 Cypress.Commands.add('get_pipeline_json', () => {
