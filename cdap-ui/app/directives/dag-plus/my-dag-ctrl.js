@@ -133,11 +133,25 @@ angular.module(PKG.name + '.commons')
     vm.selectionBox = {
       boundaries: ['#diagram-container'],
       selectables: ['.box'],
+      /**
+       * It makes sense to have the events start -> move -> end to happen
+       * in linear order. However under rare circumstances (cypress) this can
+       * be out of order, meaning move gets fired before start event callback
+       * is fired. The `isSelectionInProgress` is a catch all to make sure no
+       * matter what the sequence of callback happens it is right.
+       */
+      isSelectionInProgress: false,
       toggle: false,
       start: () => {
-        vm.selectedNode = [];
+        if (!vm.selectionBox.isSelectionInProgress) {
+          vm.selectedNode = [];
+          vm.selectionBox.isSelectionInProgress = true;
+        }
       },
       move: ({selected}) => {
+        if (!vm.selectionBox.isSelectionInProgress) {
+          vm.selectionBox.isSelectionInProgress = true;
+        }
         const selectedNodes = $scope.nodes.filter(node => {
           if (selected.indexOf(node.name) !== -1) {
             return true;
@@ -162,7 +176,6 @@ angular.module(PKG.name + '.commons')
         vm.selectedNode = selectedNodes;
         const selectedNodesMap = {};
         vm.selectedNode.forEach(node => selectedNodesMap[node.name] = true);
-        console.log('selected nodes: ', selectedNodesMap);
         const adjacencyMap = DAGPlusPlusNodesStore.getAdjacencyMap();
         clearConnectionsSelection();
         vm.selectedNode.forEach(({name}) => {
@@ -171,7 +184,6 @@ angular.module(PKG.name + '.commons')
             return;
           }
           const connectionsFromSource = vm.instance.getConnections({sourceId: name});
-          console.log('Connections from source: ', name, connectionsFromSource);
           connectedNodes.forEach(nodeId => {
             if (!selectedNodesMap[nodeId]) {
               console.log(nodeId + ' doesn\'t exist in the selected nodes');
@@ -180,16 +192,15 @@ angular.module(PKG.name + '.commons')
             const connObj = connectionsFromSource.filter(conn => conn.source.getAttribute('data-nodeid') === name && conn.targetId === nodeId);
             if (connObj.length) {
               connObj.forEach(conn => {
-                console.log(`
-                Highlighting connection:
-                  ${conn.sourceId} - ${conn.targetId}
-                `);
                 toggleConnection(conn, false);
               });
             }
           });
         });
       },
+      end: () => {
+        vm.selectionBox.isSelectionInProgress = false;
+      }
     };
     const repaintTimeoutsMap = {};
 
@@ -796,11 +807,13 @@ angular.module(PKG.name + '.commons')
       if (notYetSelectedConnections.length !== 0) {
         notYetSelectedConnections.forEach(connection => {
           selectedConnections.push(connection);
+          connection.addClass('selected-connector');
           connection.addType('selected');
         });
       } else {
         connectionsToToggle.forEach(connection => {
           selectedConnections.splice(selectedConnections.indexOf(connection), 1);
+          connection.removeClass('selected-connector');
           connection.removeType('selected');
         });
       }
@@ -822,11 +835,12 @@ angular.module(PKG.name + '.commons')
         selectedConnections.splice(selectedConnections.indexOf(connObj), 1);
       }
       if (!toggle) {
-        console.log('setting selected type');
+        connObj.addClass('selected-connector');
         connObj.addType('selected');
         return;
       }
       connObj.toggleType('selected');
+      connObj.removeClass('selected-connector');
     }
 
     function clearConnectionsSelection() {
@@ -834,6 +848,7 @@ angular.module(PKG.name + '.commons')
         const existingTypes = conn.getType();
         if (Array.isArray(existingTypes) && existingTypes.indexOf('selected') !== -1) {
           conn.toggleType('selected');
+          conn.removeClass('selected-connector');
         }
       });
 
