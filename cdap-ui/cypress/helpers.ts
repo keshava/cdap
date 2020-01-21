@@ -1,3 +1,5 @@
+import { INodeIdentifier } from "./typings";
+
 /*
  * Copyright © 2018 Cask Data, Inc.
  *
@@ -119,11 +121,16 @@ function getGenericEndpoint(options, id) { return `.plugin-endpoint_${id}-right`
 
 function getConditionNodeEndpoint(options, id) { return `.plugin-endpoint_${id}_condition_${options.condition}` }
 
+function getNodeSelectorFromNodeIndentifier(node: INodeIdentifier) {
+  const { nodeName, nodeType, nodeId } = node;
+  return `[data-cy="plugin-node-${nodeName}-${nodeType}-${nodeId}"]`;
+}
 export {
   loginIfRequired,
   getArtifactsPoll,
   deployAndTestPipeline,
   getSessionToken,
   getGenericEndpoint,
-  getConditionNodeEndpoint
+  getConditionNodeEndpoint,
+  getNodeSelectorFromNodeIndentifier
 };

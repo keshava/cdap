@@ -17,7 +17,7 @@
 import { ConnectionType } from '../../app/cdap/components/DataPrepConnections/ConnectionType';
 import { DEFAULT_GCP_PROJECTID, DEFAULT_GCP_SERVICEACCOUNT_PATH } from '../support/constants';
 import { INodeIdentifier, INodeInfo, IgetNodeIDOptions } from '../typings';
-import { getGenericEndpoint, getConditionNodeEndpoint } from '../helpers';
+import { getGenericEndpoint, getConditionNodeEndpoint, getNodeSelectorFromNodeIndentifier } from '../helpers';
 /**
  * Uploads a pipeline json from fixtures to input file element.
  *
@@ -348,8 +348,7 @@ Cypress.Commands.add('connect_two_nodes', (
 });
 
 Cypress.Commands.add('get_node', (element: INodeIdentifier) => {
-  const { nodeName, nodeType, nodeId } = element;
-  let elementId = `[data-cy="plugin-node-${nodeName}-${nodeType}-${nodeId}"]`;
+  let elementId = getNodeSelectorFromNodeIndentifier(element);
   return cy.get(elementId).then(e => cy.wrap(e));
 });
 
