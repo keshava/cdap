@@ -141,6 +141,7 @@ export const ContextMenu = ({ selector, element, options, onOpen }: IContextMenu
           <MenuItemComp
             key={name}
             onClick={disabled === true ? undefined : handleClose.bind(null, option)}
+            data-cy={`menu-item-${name}`}
           >
             {typeof label === 'function' ? label() : label}
           </MenuItemComp>

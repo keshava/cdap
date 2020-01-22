@@ -110,7 +110,7 @@ export default function PipelineContextMenu({
     },
     {
       name: 'zoom-in',
-      label: 'Zoom in',
+      label: 'Zoom In',
       onClick: onZoomIn,
     },
     {
