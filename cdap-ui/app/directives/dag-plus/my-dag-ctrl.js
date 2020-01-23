@@ -214,6 +214,10 @@ angular.module(PKG.name + '.commons')
       newConnections  = [...$scope.connections, ...newConnections];
       DAGPlusPlusNodesActionsFactory.createGraphFromConfig(newNodes, newConnections);
       vm.instance.unbind('connection');
+      vm.instance.unbind('connectionDetached');
+      vm.instance.unbind('connectionMoved');
+      vm.instance.unbind('beforeDrop');
+      vm.instance.unbind('click');
       vm.instance.detachEveryConnection();
       init();
     };
@@ -1482,6 +1486,8 @@ angular.module(PKG.name + '.commons')
       }
       config.nodes = config.stages;
       delete config.stages;
+      vm.selectedNode = [];
+      clearConnectionsSelection();
       vm.onPipelineContextMenuPaste(config);
     };
 
