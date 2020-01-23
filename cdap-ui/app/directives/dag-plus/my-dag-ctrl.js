@@ -209,10 +209,12 @@ angular.module(PKG.name + '.commons')
       if (!Array.isArray(nodes) || !Array.isArray(connections)) {
         return;
       }
+      vm.selectedNode = [];
+      clearConnectionsSelection();
       let {nodes: newNodes, connections: newConnections} = sanitizeNodesAndConnectionsBeforePaste({nodes, connections});
       newNodes = [...$scope.nodes, ...newNodes];
       newConnections  = [...$scope.connections, ...newConnections];
-      DAGPlusPlusNodesActionsFactory.createGraphFromConfig(newNodes, newConnections);
+      DAGPlusPlusNodesActionsFactory.createGraphFromConfigOnPaste(newNodes, newConnections);
       vm.instance.unbind('connection');
       vm.instance.unbind('connectionDetached');
       vm.instance.unbind('connectionMoved');
@@ -1486,8 +1488,6 @@ angular.module(PKG.name + '.commons')
       }
       config.nodes = config.stages;
       delete config.stages;
-      vm.selectedNode = [];
-      clearConnectionsSelection();
       vm.onPipelineContextMenuPaste(config);
     };
 
