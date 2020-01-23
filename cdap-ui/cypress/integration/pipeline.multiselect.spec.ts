@@ -77,19 +77,21 @@ describe('Pipeline multi-select nodes + context menu for plugins & canvas', () =
     });
   });
 
-  it('Should correctly copy/paste/delete only nodes/connections in the selection', () => {
+  it.only('Should correctly copy/paste/delete only nodes/connections in the selection', () => {
     cy.visit('/pipelines/ns/default/studio');
     cy.create_simple_pipeline().then(({ sourceNodeId, transformNodeId, sinkNodeId }) => {
       cy.select_from_to(sourceNodeId, transformNodeId);
-      cy.get('body').type('{del}', { release: true });
+      cy.get(Helpers.getNodeSelectorFromNodeIndentifier(sourceNodeId)).rightclick();
+      cy.get('[data-cy="menu-item-plugin copy"]:visible').click();
+      cy.get('#dag-container').rightclick({ force: true });
+      cy.get('[data-cy="menu-item-pipeline-node-paste"]').click();
       cy.get_pipeline_json().then(pipelineConfig => {
         const connections = pipelineConfig.config.connections;
         const stages = pipelineConfig.config.stages;
-        expect(connections.length).eq(0);
-        expect(stages.length).eq(1);
+        expect(connections.length).eq(3);
+        expect(stages.length).eq(5);
       });
       const undoSelector = '[data-cy="pipeline-undo-action-btn"]';
-      cy.get(undoSelector).click();
       cy.get(undoSelector).click();
       cy.get_pipeline_json().then(pipelineConfig => {
         const connections = pipelineConfig.config.connections;
