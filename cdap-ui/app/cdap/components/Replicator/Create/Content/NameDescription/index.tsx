@@ -87,7 +87,6 @@ const NameDescriptionView: React.FC<INameDescriptionProps> = ({ classes, name, d
   return (
     <div className={classes.root}>
       <h3>Name Replicator</h3>
-      <pre>{localName}</pre>
       <Name value={localName} setName={setLocalName} />
       <br />
       <br />
