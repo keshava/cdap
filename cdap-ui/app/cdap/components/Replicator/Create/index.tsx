@@ -15,13 +15,88 @@
  */
 
 import * as React from 'react';
+import withStyles, { WithStyles, StyleRules } from '@material-ui/core/styles/withStyles';
+import LeftPanel from 'components/Replicator/Create/LeftPanel';
+import EntityTopPanel from 'components/EntityTopPanel';
+import Content from 'components/Replicator/Create/Content';
 
-export default class Create extends React.PureComponent {
+export const CreateContext = React.createContext({});
+
+const styles = (): StyleRules => {
+  return {
+    root: {
+      height: '100%',
+    },
+    content: {
+      height: 'calc(100% - 50px)',
+      display: 'grid',
+      gridTemplateColumns: '250px 1fr',
+    },
+  };
+};
+
+interface ICreateState {
+  name: string;
+  description: string;
+  sourcePlugin: any;
+  targetPlugin: any;
+  sourceConfig: any;
+  targetConfig: any;
+  activeStep: number;
+  setActiveStep: (step: number) => void;
+}
+
+export type ICreateContext = Partial<ICreateState>;
+
+class CreateView extends React.PureComponent<WithStyles<typeof styles>, ICreateContext> {
+  public setActiveStep = (step: number) => {
+    this.setState({ activeStep: step });
+  };
+
+  public state = {
+    name: '',
+    description: '',
+    sourcePlugin: null,
+    targetPlugin: null,
+    sourceConfig: null,
+    targetConfig: null,
+
+    activeStep: 0,
+
+    setActiveStep: this.setActiveStep,
+  };
+
   public render() {
     return (
-      <div>
-        <h1>Create</h1>
-      </div>
+      <CreateContext.Provider value={this.state}>
+        <div className={this.props.classes.root}>
+          <EntityTopPanel title="Create new Replicator" closeBtnAnchorLink={() => history.back()} />
+          <div className={this.props.classes.content}>
+            <LeftPanel />
+            <Content />
+          </div>
+        </div>
+      </CreateContext.Provider>
     );
   }
 }
+
+export function createContextConnect(Comp) {
+  return (extraProps) => {
+    return (
+      <CreateContext.Consumer>
+        {(props) => {
+          const finalProps = {
+            ...props,
+            ...extraProps,
+          };
+
+          return <Comp {...finalProps} />;
+        }}
+      </CreateContext.Consumer>
+    );
+  };
+}
+
+const Create = withStyles(styles)(CreateView);
+export default Create;
