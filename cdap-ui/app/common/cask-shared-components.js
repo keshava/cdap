@@ -107,6 +107,7 @@ var LoadingSVG = require('../cdap/components/LoadingSVG').default;
 var PipelineContextMenu = require('../cdap/components/PipelineContextMenu').default;
 var PluginContextMenu = require('../cdap/components/PluginContextMenu').default;
 var SelectionBox = require('../cdap/components/SelectionBox').default;
+var Clipboard = require('../cdap/services/Clipboard');
 export {
   Store,
   DataPrepHome,
@@ -187,4 +188,5 @@ export {
   PipelineContextMenu,
   PluginContextMenu,
   SelectionBox,
+  Clipboard,
 };

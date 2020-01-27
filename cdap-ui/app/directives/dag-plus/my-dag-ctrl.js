@@ -1443,32 +1443,14 @@ angular.module(PKG.name + '.commons')
       return myHelpers.objectQuery(vm.pluginsMap, key, 'widgets', 'emit-errors');
     };
 
-    /**
-     * Not refactoring this to use the new CopyToClipboard.
-     * This will eventually be replaced by react implementation
-     * which will use the new utility.
-     * */
-    vm.copyToClipboard = (config) => {
-      const clipboardObj = config;
-
-      const clipboardText = JSON.stringify(clipboardObj);
-
-      const textArea = document.createElement('textarea');
-      textArea.value = clipboardText;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-    };
-
     vm.onKeyboardCopy = function onKeyboardCopy() {
       const stages = vm.getPluginConfiguration().stages;
       const connections =  vm.getSelectedConnections();
       vm.nodeMenuOpen = null;
-      vm.copyToClipboard({
+      window.CaskCommon.Clipboard.copyToClipBoard(JSON.stringify({
         stages,
         connections
-      });
+      }));
     };
 
     // handling node paste
