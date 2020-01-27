@@ -129,6 +129,7 @@ describe('Pipeline multi-select nodes + context menu for plugins & canvas', () =
   it('Should be enabled/disabled if clipboard has valid pipeline object', () => {
     cy.visit('/pipelines/ns/default/studio');
     cy.create_simple_pipeline().then(({ sourceNodeId, sinkNodeId }) => {
+      cy.window().then(window => window.CaskCommon.Clipboard.copyToClipBoard(''));
       cy.get('#dag-container').rightclick({ force: true });
       cy.get('[data-cy="menu-item-pipeline-node-paste"]').then(el => {
         expect(el[0].getAttribute('aria-disabled')).to.eq('true');
