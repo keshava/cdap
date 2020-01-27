@@ -159,4 +159,28 @@ describe('Pipeline multi-select nodes + context menu for plugins & canvas', () =
       });
     });
   });
+
+  it('Existing hamburger menu should work', () => {
+    cy.visit('/pipelines/ns/default/studio');
+    cy.create_simple_pipeline().then(({ sourceNodeId }) => {
+      const { nodeName, nodeType, nodeId } = sourceNodeId;
+      const hamburgerSelector = `hamburgermenu-${nodeName}-${nodeType}-${nodeId}`;
+      cy.get(`[data-cy="${hamburgerSelector}-toggle"]`).click();
+      cy.get(`[data-cy="${hamburgerSelector}-copy"]`).click();
+      cy.get('#dag-container').rightclick({ force: true });
+      cy.get(`[data-cy="menu-item-pipeline-node-paste"]`).click();
+      cy.get_pipeline_json().then(pipelineConfig => {
+        const { stages } = pipelineConfig.config;
+        expect(stages.length).to.eq(4);
+      });
+      const newAddedSourceName = `BigQueryTable-batchsource-3`;
+      cy.get(`[data-cy="hamburgermenu-${newAddedSourceName}-toggle"]`).click();
+      cy.get(`[data-cy="hamburgermenu-${newAddedSourceName}-delete"]`).click();
+      cy.get_pipeline_json().then(pipelineConfig => {
+        const { stages } = pipelineConfig.config;
+        expect(stages.length).to.eq(3);
+      });
+    });
+  });
+
 });
