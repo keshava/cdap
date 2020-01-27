@@ -69,7 +69,7 @@ describe('Pipeline multi-select nodes + context menu for plugins & canvas', () =
       cy.get('li[role="menuitem"]').contains('Zoom In');
       cy.get('li[role="menuitem"]').contains('Zoom Out');
       cy.get('li[role="menuitem"]').contains('Fit to Screen');
-      cy.get('li[role="menuitem"]').contains('Pretty print');
+      cy.get('li[role="menuitem"]').contains('Align');
       cy.get('li[role="menuitem"]').contains('Paste');
     });
   });
