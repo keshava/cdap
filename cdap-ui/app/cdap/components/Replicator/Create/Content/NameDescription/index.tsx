@@ -18,11 +18,14 @@ import * as React from 'react';
 import withStyles, { WithStyles, StyleRules } from '@material-ui/core/styles/withStyles';
 import { createContextConnect, ICreateContext } from 'components/Replicator/Create';
 import WidgetWrapper from 'components/ConfigurationGroup/WidgetWrapper';
+import StepButtons from 'components/Replicator/Create/Content/StepButtons';
 
 const styles = (): StyleRules => {
   return {
     root: {
       padding: '30px 40px',
+    },
+    content: {
       width: '50%',
       maxWidth: '1000px',
       minWidth: '600px',
@@ -80,17 +83,31 @@ const Description = ({ setDescription, value }) => {
 
 type INameDescriptionProps = ICreateContext & WithStyles<typeof styles>;
 
-const NameDescriptionView: React.FC<INameDescriptionProps> = ({ classes, name, description }) => {
+const NameDescriptionView: React.FC<INameDescriptionProps> = ({
+  classes,
+  name,
+  description,
+  setNameDescription,
+}) => {
   const [localName, setLocalName] = React.useState(name);
   const [localDescription, setLocalDescription] = React.useState(description);
 
+  function handleNext() {
+    setNameDescription(localName, localDescription);
+  }
+
   return (
     <div className={classes.root}>
-      <h3>Name Replicator</h3>
-      <Name value={localName} setName={setLocalName} />
-      <br />
-      <br />
-      <Description value={localDescription} setDescription={setLocalDescription} />
+      <div className={classes.content}>
+        <h3>Name Replicator</h3>
+        <br />
+        <Name value={localName} setName={setLocalName} />
+        <br />
+        <br />
+        <Description value={localDescription} setDescription={setLocalDescription} />
+      </div>
+
+      <StepButtons nextDisabled={localName.length === 0} onNext={handleNext} />
     </div>
   );
 };

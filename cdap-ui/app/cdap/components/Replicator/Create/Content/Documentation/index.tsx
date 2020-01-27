@@ -14,26 +14,10 @@
  * the License.
  */
 
-import NameDescription from 'components/Replicator/Create/Content/NameDescription';
-import SourceConfig from 'components/Replicator/Create/Content/SourceConfig';
-import TargetConfig from 'components/Replicator/Create/Content/TargetConfig';
-import Summary from 'components/Replicator/Create/Content/Summary';
+import * as React from 'react';
 
-export const STEPS = [
-  {
-    label: 'Name replicator',
-    component: NameDescription,
-  },
-  {
-    label: 'Configure source',
-    component: SourceConfig,
-  },
-  {
-    label: 'Configure target',
-    component: TargetConfig,
-  },
-  {
-    label: 'Review',
-    component: Summary,
-  },
-];
+const DocumentationView: React.FC = () => {
+  return <h1>Documentation</h1>;
+};
+
+export default DocumentationView;

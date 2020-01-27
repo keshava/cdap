@@ -20,7 +20,14 @@ import { apiCreator } from 'services/resource-helper';
 const dataSrc = DataSourceConfigurer.getInstance();
 
 const pluginPath = '/namespaces/:namespace/artifacts/delta-app/versions/0.1.0-SNAPSHOT/extensions';
+const appPath = '/namespaces/:namespace/apps/:appName';
+const programPath = `${appPath}/workers/DeltaWorker`;
 
 export const MyReplicatorApi = {
   getPlugins: apiCreator(dataSrc, 'GET', 'REQUEST', `${pluginPath}/:pluginType?scope=system`),
+  publish: apiCreator(dataSrc, 'PUT', 'REQUEST', appPath),
+  list: apiCreator(dataSrc, 'GET', 'REQUEST', '/namespaces/:namespace/apps?artifactName=delta-app'),
+  pollStatus: apiCreator(dataSrc, 'GET', 'POLL', `${programPath}/status`),
+  action: apiCreator(dataSrc, 'POST', 'REQUEST', `${programPath}/:action`),
+  delete: apiCreator(dataSrc, 'DELETE', 'REQUEST', appPath),
 };

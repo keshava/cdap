@@ -18,6 +18,7 @@ import * as React from 'react';
 import { MyReplicatorApi } from 'api/replicator';
 import { getCurrentNamespace } from 'services/NamespaceStore';
 import { PluginType } from 'components/Replicator/constants';
+import { Link } from 'react-router-dom';
 
 const SourceList: React.FC = () => {
   const [sources, setSources] = React.useState([]);
@@ -40,7 +41,19 @@ const SourceList: React.FC = () => {
 
       <ul>
         {sources.map((source) => {
-          return <li key={source.name}>{source.name}</li>;
+          const { name: artifactName, version, scope } = source.artifact;
+
+          return (
+            <li key={source.name}>
+              <Link
+                to={`/ns/${getCurrentNamespace()}/replicator/create/${artifactName}/${version}/${scope}/${
+                  source.name
+                }`}
+              >
+                {source.name}
+              </Link>
+            </li>
+          );
         })}
       </ul>
     </div>
