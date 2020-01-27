@@ -110,7 +110,7 @@ angular.module(PKG.name + '.commons')
           return {from, to};
         });
     };
-    vm.deleteSelectedNodes = () => onKeyboardDelete();
+    vm.deleteSelectedNodes = () => vm.onKeyboardDelete();
     vm.onPluginContextMenuOpen = (nodeId) => {
       const isNodeAlreadySelected = vm.selectedNode.find(n => n.name === nodeId);
       if (isNodeAlreadySelected) {
@@ -350,8 +350,8 @@ angular.module(PKG.name + '.commons')
     function bindKeyboardEvents() {
       Mousetrap.bind(['command+z', 'ctrl+z'], vm.undoActions);
       Mousetrap.bind(['command+shift+z', 'ctrl+shift+z'], vm.redoActions);
-      Mousetrap.bind(['del', 'backspace'], onKeyboardDelete);
-      Mousetrap.bind(['command+c', 'ctrl+c'], onKeyboardCopy);
+      Mousetrap.bind(['del', 'backspace'], vm.onKeyboardDelete);
+      Mousetrap.bind(['command+c', 'ctrl+c'], vm.onKeyboardCopy);
       // This is to select multiple nodes by click-n-drag in pipeline studio
       Mousetrap.bind('shift', () => {
         $scope.$apply(function() {
@@ -386,13 +386,13 @@ angular.module(PKG.name + '.commons')
       }
     }
 
-    function onKeyboardDelete() {
+    vm.onKeyboardDelete = function onKeyboardDelete() {
       if (vm.selectedNode.length) {
         vm.onNodeDelete(null, vm.selectedNode);
       } else {
         vm.removeSelectedConnections();
       }
-    }
+    };
 
     vm.nodeMouseEnter = function (node) {
       if (!$scope.showMetrics || vm.scale >= SHOW_METRICS_THRESHOLD) { return; }
@@ -1197,7 +1197,7 @@ angular.module(PKG.name + '.commons')
       DAGPlusPlusNodesActionsFactory.selectNode(node.name);
     };
 
-    vm.onNodeDelete = function (event, nodes) {
+    vm.onNodeDelete = function (event, nodes = vm.selectedNode) {
       if (event) {
         event.stopPropagation();
       }
@@ -1454,7 +1454,7 @@ angular.module(PKG.name + '.commons')
       document.body.removeChild(textArea);
     };
 
-    function onKeyboardCopy() {
+    vm.onKeyboardCopy = function onKeyboardCopy() {
       const stages = vm.getPluginConfiguration().stages;
       const connections =  vm.getSelectedConnections();
       vm.nodeMenuOpen = null;
@@ -1462,7 +1462,7 @@ angular.module(PKG.name + '.commons')
         stages,
         connections
       });
-    }
+    };
 
     // handling node paste
     document.body.onpaste = (e) => {

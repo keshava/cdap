@@ -255,12 +255,12 @@
             <div class="menu-content">
               <div
                 class="menu-content-action"
-                ng-click="DAGPlusPlusCtrl.onNodeCopy(node)">
+                ng-click="DAGPlusPlusCtrl.onKeyboardCopy()">
                 Copy
               </div>
               <hr />
               <div class="menu-content-action menu-content-delete"
-                ng-click="DAGPlusPlusCtrl.onNodeDelete($event, node)">
+                ng-click="DAGPlusPlusCtrl.deleteSelectedNodes()">
                 Delete
               </div>
             </div>
