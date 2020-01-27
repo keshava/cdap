@@ -1388,6 +1388,13 @@ angular.module(PKG.name + '.commons')
       };
 
       DAGPlusPlusNodesActionsFactory.addComment(config);
+      if (commentsTimeout) {
+        vm.comments = DAGPlusPlusNodesStore.getComments();
+        $timeout.cancel(commentsTimeout);
+      }
+      commentsTimeout = $timeout(function () {
+        makeCommentsDraggable();
+      });
     };
 
     vm.clearCommentSelection = function clearCommentSelection() {
