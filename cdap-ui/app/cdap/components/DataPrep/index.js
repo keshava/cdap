@@ -62,7 +62,7 @@ export default class DataPrep extends Component {
       currentWorkspace: null,
       sidePanelToggle: false,
       workspaceName: null,
-      workspaceError: null,
+      workspaceError: {},
     };
 
     this.toggleBackendDown = this.toggleBackendDown.bind(this);
@@ -81,14 +81,19 @@ export default class DataPrep extends Component {
     checkDataPrepHigherVersion();
     this.storeSub = DataPrepStore.subscribe(() => {
       let state = DataPrepStore.getState();
-      this.setState({ workspaceError: state.error.workspaceError }, () => {
-        if (this.state.workspaceError) {
+      // only update if the new error is different than existing one
+      if (
+        state.error.workspaceError &&
+        state.error.workspaceError.message !== this.state.workspaceError.message &&
+        state.error.workspaceError.statusCode !== this.state.workspaceError.statusCode
+      ) {
+        this.setState({ workspaceError: state.error.workspaceError }, () => {
           this.eventEmitter.emit(globalEvents.PAGE_LEVEL_ERROR, {
             data: this.state.workspaceError.message,
             statusCode: this.state.workspaceError.statusCode,
           });
-        }
-      });
+        });
+      }
     });
   }
 

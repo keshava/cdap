@@ -605,7 +605,7 @@ function makeApp(authAddress, cdapConfig, uiSettings) {
 
   // any other path, serve index.html
   app.all(
-    ['/pipelines', '/pipelines*'],
+    ['/pipelines', '/pipelines/*'],
     [
       function(req, res) {
         // BCookie is the browser cookie, that is generated and will live for a year.
@@ -623,7 +623,7 @@ function makeApp(authAddress, cdapConfig, uiSettings) {
     ]
   );
   app.all(
-    ['/metadata', '/metadata*'],
+    ['/metadata', '/metadata/*'],
     [
       function(req, res) {
         // BCookie is the browser cookie, that is generated and will live for a year.
@@ -642,7 +642,7 @@ function makeApp(authAddress, cdapConfig, uiSettings) {
   );
 
   app.all(
-    ['/logviewer', '/logviewer*'],
+    ['/logviewer', '/logviewer/*'],
     [
       function(req, res) {
         // BCookie is the browser cookie, that is generated and will live for a year.
@@ -661,7 +661,7 @@ function makeApp(authAddress, cdapConfig, uiSettings) {
   );
 
   app.all(
-    ['/', '/cdap', '/cdap*'],
+    ['/', '/cdap', '/cdap/*'],
     [
       function(req, res) {
         res.render('cdap', { nonceVal: `${res.locals.nonce}` });

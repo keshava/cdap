@@ -65,6 +65,7 @@ import { MyNamespaceApi } from 'api/namespace';
 import If from 'components/If';
 import Page500 from 'components/500';
 import LoadingSVG from 'components/LoadingSVG';
+import { handlePageLevelError } from 'services/helpers';
 
 // const DAG = Loadable({
 //   loader: () => import(/* webpackChunkName: "DAG" */ 'components/DAG'),
@@ -116,7 +117,7 @@ class CDAP extends Component {
   componentWillMount() {
     this.fetchSessionTokenAndUpdateState().then(this.setUIState);
     this.eventEmitter.on(globalEvents.PAGE_LEVEL_ERROR, (err) => {
-      this.setState({ pageLevelError: this.handlePageLevelError(err) });
+      this.setState({ pageLevelError: handlePageLevelError(err) });
     });
   }
 
@@ -136,29 +137,9 @@ class CDAP extends Component {
     this.fetchSessionTokenAndUpdateState().then(this.setUIState);
   };
 
-  handlePageLevelError = (error) => {
-    // This function parses receiveing error messages and converts it to a
-    // format that page level error supports
-    let message = null;
-    let errorCode = null;
-    if (error.data) {
-      message = error.data;
-    } else if (typeof error.response === 'string') {
-      message = error.response;
-    }
-
-    if (error.statusCode) {
-      errorCode = error.statusCode;
-    } else {
-      // If we don't know about the error type, showing a 500 level error
-      errorCode = 500;
-    }
-    return { errorCode, message };
-  };
-
   retrieveNamespace = () => {
     this.setState({ retrievingNs: true });
-    this.namespaceSub = MyNamespaceApi.pollListTrue().subscribe(
+    this.namespaceSub = MyNamespaceApi.list().subscribe(
       (res) => {
         if (res.length > 0) {
           NamespaceStore.dispatch({

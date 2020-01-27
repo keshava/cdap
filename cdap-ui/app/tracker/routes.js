@@ -15,8 +15,16 @@
  */
 
 angular.module(PKG.name + '.feature.tracker')
-  .config(function($stateProvider, MYAUTH_ROLE) {
+  .config(function($stateProvider, $urlRouterProvider, MYAUTH_ROLE) {
     const productName = window.CaskCommon.ThemeHelper.Theme.productName;
+
+    $urlRouterProvider.otherwise(() => {
+      //unmatched route, will show 404
+      window.CaskCommon.ee.emit(
+        window.CaskCommon.globalEvents.PAGE_LEVEL_ERROR, { statusCode: 404 });
+
+    });
+
     $stateProvider
       .state('home', {
         url: '/',
@@ -42,6 +50,10 @@ angular.module(PKG.name + '.feature.tracker')
         resolve: {
           sessionToken: function() {
             window.CaskCommon.SessionTokenStore.fetchSessionToken();
+          },
+          rResetPreviousPageLevelError: function () {
+            window.CaskCommon.ee.emit(
+              window.CaskCommon.globalEvents.PAGE_LEVEL_ERROR, { reset: true });
           },
           rValidNamespace: function ($stateParams, myNamespace) {
             const { namespace } = $stateParams;

@@ -30,6 +30,13 @@ angular.module(PKG.name + '.feature.hydrator')
       uiSupportedArtifacts.push(GLOBALS.eltSqlPipeline);
     }
 
+    $urlRouterProvider.otherwise(() => {
+      //Unmatched route, will show 404
+      window.CaskCommon.ee.emit(
+        window.CaskCommon.globalEvents.PAGE_LEVEL_ERROR, { statusCode: 404 });
+
+    });
+
     $stateProvider
       .state('home', {
         url: '/',
@@ -62,9 +69,12 @@ angular.module(PKG.name + '.feature.hydrator')
             });
             return defer.promise;
           },
+          rResetPreviousPageLevelError: function () {
+            window.CaskCommon.ee.emit(
+              window.CaskCommon.globalEvents.PAGE_LEVEL_ERROR, { reset: true });
+          },
           rValidNamespace: function ($stateParams, myNamespace) {
             const { namespace } = $stateParams;
-
             myNamespace.getList().then(namespaces => {
               const validNamespace = namespaces.find(ns => ns.name === namespace);
               // Current namespace not in available list of namespaces

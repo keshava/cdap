@@ -40,13 +40,11 @@ export default function Page404({ entityName, entityType, children, message }) {
               <span data-cy="page-404-error-msg">{message}</span>
             </If>
             <If condition={!message}>
-              {isEmpty(entityType) || isEmpty(entityName) ? (
-                T.translate(`${I18N_PREFIX}.genericMessage`)
-              ) : (
-                <span>
-                  {T.translate(`${I18N_PREFIX}.entityMessage`, { entityType, entityName })}
-                </span>
-              )}
+              <span data-cy="page-404-default-msg">
+                {isEmpty(entityType) || isEmpty(entityName)
+                  ? T.translate(`${I18N_PREFIX}.genericMessage`)
+                  : T.translate(`${I18N_PREFIX}.entityMessage`, { entityType, entityName })}
+              </span>
             </If>
           </strong>
         </h1>

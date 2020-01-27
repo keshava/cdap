@@ -28,7 +28,8 @@ var express = require('./server/express.js'),
   graphql = require('./graphql/graphql.js'),
   https = require('https'),
   getHostName = require('./server/config/hostname'),
-  ip = require('ip');
+  ip = require('ip'),
+  middleware404 = require('./server/middleware-404');
 
 var cdapConfig,
   securityConfig,
@@ -112,7 +113,10 @@ cdapConfigurator
   })
 
   .then(function(app) {
+    // handles /graphql route
     graphql.applyMiddleware(app, Object.assign({}, cdapConfig, securityConfig), log);
+    // handles all unmatched routes
+    app.use(middleware404.render404);
 
     var port, server;
     if (cdapConfig['ssl.external.enabled'] === 'true') {
