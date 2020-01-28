@@ -18,7 +18,7 @@ import * as Helpers from '../helpers';
 
 let headers = {};
 const FAKE_NAMESPACE = 'fakeNamespace';
-const NO_NAMESPACE_MSG = `Namespace ${FAKE_NAMESPACE} does not exist.`;
+const NO_NAMESPACE_MSG = `Namespace '${FAKE_NAMESPACE}' does not exist.`;
 const SELECTOR_404_MSG = '[data-cy="page-404-error-msg"]';
 const SELECTOR_404_DEFAULT_MSG = '[data-cy="page-404-default-msg"]';
 const DEFAULT_404_MSG =
@@ -62,12 +62,11 @@ describe('Page level error because of ', () => {
     cy.get(SELECTOR_404_MSG).should('have.text', NO_NAMESPACE_MSG);
   });
 
-  it('no namespace in pipeline detail page should show 404',
-     () => {
-         // Go to Pipeline details page
+  it('no namespace in pipeline detail page should show 404', () => {
+    // Go to Pipeline details page
     cy.visit(`/cdap/ns/${FAKE_NAMESPACE}/view/pipelineName`);
     cy.get(SELECTOR_404_MSG).should('have.text', NO_NAMESPACE_MSG);
-     });
+  });
 
   it('no namespace in pipeline drafts page should show 404', () => {
     // Go to Pipelines drafts
@@ -107,12 +106,20 @@ describe('Page level error because of ', () => {
     cy.get(SELECTOR_404_DEFAULT_MSG).should('have.text', DEFAULT_404_MSG);
   });
 
-  it('no valid path should show 404 in pipeline details',
-     () => {
+  it('no valid path should show 404 in pipeline details', () => {
     // Go to pipeline details page
     cy.visit(`/pipelines/ns/default/viewInvalidPipelineDetails/pipelineName`);
     cy.get(SELECTOR_404_DEFAULT_MSG).should('have.text', DEFAULT_404_MSG);
-     });
+  });
+
+  it('no valid pipeline should show 404 in pipeline details', () => {
+    // Go to pipeline details page of invalid pipeline
+    cy.visit(`/pipelines/ns/default/view/invalidPipelineName`);
+    cy.get(SELECTOR_404_MSG)
+        .should(
+            'have.text',
+            `'application:default.invalidPipelineName.-SNAPSHOT' was not found.`);
+  });
 
   it('no valid path should show 404 in metadata page', () => {
     // Go to metadata search results page

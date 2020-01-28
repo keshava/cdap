@@ -81,7 +81,7 @@ angular.module(PKG.name + '.feature.hydrator')
               if (namespaces.length > 0 && !validNamespace) {
                 const error = {
                   statusCode: 404,
-                  data: `Namespace ${namespace} does not exist.`
+                  data: `Namespace '${namespace}' does not exist.`
                 };
                 window.CaskCommon.ee.emit(
                   window.CaskCommon.globalEvents.PAGE_LEVEL_ERROR, error);
@@ -381,7 +381,10 @@ angular.module(PKG.name + '.feature.hydrator')
                       return;
                     }
                     return $q.resolve(pipelineDetail);
-                  }
+                  },(err) => {
+                      window.CaskCommon.ee.emit(
+                        window.CaskCommon.globalEvents.PAGE_LEVEL_ERROR, err);
+                    }
                 );
             }
           },

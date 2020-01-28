@@ -117,7 +117,11 @@ class CDAP extends Component {
   componentWillMount() {
     this.fetchSessionTokenAndUpdateState().then(this.setUIState);
     this.eventEmitter.on(globalEvents.PAGE_LEVEL_ERROR, (err) => {
-      this.setState({ pageLevelError: handlePageLevelError(err) });
+      if (err.reset === true) {
+        this.setState({ pageLevelError: false });
+      } else {
+        this.setState({ pageLevelError: handlePageLevelError(err) });
+      }
     });
   }
 
