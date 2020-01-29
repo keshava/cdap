@@ -14,6 +14,8 @@
  * the License.
  */
 
+package io.cdap.cdap.runtime.dataproc.launcher;
+
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -27,7 +29,9 @@ import io.cdap.cdap.runtime.spi.launcher.Launcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -45,6 +49,12 @@ public class DataprocLauncher implements Launcher {
   @Override
   public void launch(Map<String, URI> localFiles) {
     LOG.info("Inside dataproc launcher");
+    LOG.info("launcher jar classpath {}", new File(localFiles.get("launcher.jar")).getAbsolutePath());
+    List<String> collect = localFiles.values().stream().map(
+      x -> new File(x).getAbsolutePath()).collect(Collectors.toList());
+    for (String url : collect) {
+      LOG.info("classpath {}", url);
+    }
     // TODO figure out how to pass in cluster information
     try {
       SubmitJobRequest request = SubmitJobRequest.newBuilder()
@@ -52,15 +62,16 @@ public class DataprocLauncher implements Launcher {
         .setProjectId("vini-project-238000")
         .setJob(Job.newBuilder().setPlacement(JobPlacement.newBuilder().setClusterName("test-zk").build())
                   .setHadoopJob(HadoopJob.newBuilder()
-                                  .addAllFileUris(localFiles.values().stream().map(URI::toString)
-                                                    .collect(Collectors.toList()))
+                                  .setMainClass("io.cdap.cdap.internal.app.runtime.distributed.launcher.TestLauncher")
+                                  .addAllJarFileUris(collect)
                                   .build())
                   .build())
         .build();
       CredentialsProvider credentialsProvider = FixedCredentialsProvider
         .create(GoogleCredentials.getApplicationDefault());
       JobControllerClient client = JobControllerClient.create(
-        JobControllerSettings.newBuilder().setCredentialsProvider(credentialsProvider).build()
+        JobControllerSettings.newBuilder().setCredentialsProvider(credentialsProvider)
+          .setEndpoint("us-west1-dataproc.googleapis.com:443").build()
       );
       Job job = client.submitJob(request);
       LOG.info("Launched hadoop job on dataproc");

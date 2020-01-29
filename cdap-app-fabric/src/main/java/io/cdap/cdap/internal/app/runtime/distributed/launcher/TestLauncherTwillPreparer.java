@@ -33,14 +33,12 @@ import io.cdap.cdap.common.io.Locations;
 import io.cdap.cdap.common.logging.LoggingContext;
 import io.cdap.cdap.common.logging.LoggingContextAccessor;
 import io.cdap.cdap.common.utils.DirUtils;
-import io.cdap.cdap.internal.app.runtime.distributed.remote.RemoteLauncher;
 import io.cdap.cdap.logging.context.LoggingContextHelper;
 import io.cdap.cdap.proto.id.ProgramRunId;
 import io.cdap.cdap.runtime.spi.launcher.Launcher;
 import io.cdap.cdap.runtime.spi.ssh.SSHSession;
 import joptsimple.OptionSpec;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.twill.api.ClassAcceptor;
 import org.apache.twill.api.EventHandlerSpecification;
 import org.apache.twill.api.LocalFile;
@@ -60,7 +58,6 @@ import org.apache.twill.internal.Constants;
 import org.apache.twill.internal.DefaultLocalFile;
 import org.apache.twill.internal.DefaultRuntimeSpecification;
 import org.apache.twill.internal.DefaultTwillSpecification;
-import org.apache.twill.internal.EnvKeys;
 import org.apache.twill.internal.JvmOptions;
 import org.apache.twill.internal.LogOnlyEventHandler;
 import org.apache.twill.internal.TwillRuntimeSpecification;
@@ -78,8 +75,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URL;
@@ -387,7 +382,7 @@ public class TestLauncherTwillPreparer implements TwillPreparer {
         programRunId, programOptions.getArguments().asMap());
       Cancellable cancelLoggingContext = LoggingContextAccessor.setLoggingContext(loggingContext);
 
-      Map<String, LocalFile> localFiles = Maps.newHashMap();
+      Map<String, LocalFile> localFiles = new HashMap<>();
 
       createLauncherJar(localFiles);
       createTwillJar(createBundler(classAcceptor, stagingDir), localFiles);
@@ -588,7 +583,7 @@ public class TestLauncherTwillPreparer implements TwillPreparer {
     }
 
     LOG.debug("Create and copy {}", Constants.Files.RESOURCES_JAR);
-    Location location = Locations.toLocation(Files.createTempFile(stagingDir, Constants.Files.RESOURCES_JAR, null));
+    Location location = Locations.toLocation(new File(stagingDir.toFile(), Constants.Files.RESOURCES_JAR));
     bundler.createBundle(location, Collections.emptyList(), resources);
     LOG.debug("Done {}", Constants.Files.RESOURCES_JAR);
     localFiles.put(Constants.Files.RESOURCES_JAR, createLocalFile(Constants.Files.RESOURCES_JAR, location, true));
@@ -599,8 +594,7 @@ public class TestLauncherTwillPreparer implements TwillPreparer {
     LOG.debug("Create and copy {}", Constants.Files.RUNTIME_CONFIG_JAR);
 
     // Jar everything under the given directory, which contains different files needed by AM/runnable containers
-    Location location = Locations.toLocation(Files.createTempFile(stagingDir,
-                                                                  Constants.Files.RUNTIME_CONFIG_JAR, null));
+    Location location = Locations.toLocation(new File(stagingDir.toFile(), Constants.Files.RUNTIME_CONFIG_JAR));
     try (
       JarOutputStream jarOutput = new JarOutputStream(location.getOutputStream());
       DirectoryStream<Path> stream = Files.newDirectoryStream(dir)
@@ -839,48 +833,6 @@ public class TestLauncherTwillPreparer implements TwillPreparer {
     String path = uri.getPath();
     int idx = path.lastIndexOf('/');
     return idx >= 0 ? path.substring(idx + 1) : path;
-  }
-
-  /**
-   * Generates the shell script for launching the JVM process of the runnable that will run on the remote host.
-   */
-  private String generateLaunchScript(RuntimeSpecification runtimeSpec, String targetPath,
-                                      String runnableName, int memory) {
-    String logsDir = targetPath + "/logs";
-
-    StringWriter writer = new StringWriter();
-    PrintWriter scriptWriter = new PrintWriter(writer, true);
-
-    scriptWriter.println("#!/bin/bash");
-    Map<String, String> runnableEnv = environments.getOrDefault(runnableName, Collections.emptyMap());
-
-    for (Map.Entry<String, String> env : runnableEnv.entrySet()) {
-      scriptWriter.printf("export %s=\"%s\"\n", env.getKey(), env.getValue());
-    }
-
-    scriptWriter.printf("export %s=\"%s\"\n", EnvKeys.TWILL_RUNNABLE_NAME, runnableName);
-    scriptWriter.printf("mkdir -p %s/tmp\n", targetPath);
-    scriptWriter.printf("mkdir -p %s\n", logsDir);
-    scriptWriter.printf("cd %s\n", targetPath);
-
-    scriptWriter.printf("if [ -e %s/%s ]; then\n", targetPath, SPARK_ENV_SH);
-    scriptWriter.printf("  source %s/%s\n", targetPath, SPARK_ENV_SH);
-    scriptWriter.printf("fi\n");
-
-    scriptWriter.println("export HADOOP_CLASSPATH=`hadoop classpath`");
-
-    scriptWriter.printf(
-      "nohup java -Djava.io.tmpdir=tmp -Dcdap.runid=%s -cp %s/%s -Xmx%dm %s %s '%s' true >%s/stdout 2>%s/stderr &\n",
-      programRunId.getRun(), targetPath, Constants.Files.LAUNCHER_JAR, memory,
-      getJvmOptions().getRunnableExtraOptions(runnableName),
-      RemoteLauncher.class.getName(),
-      runtimeSpec.getRunnableSpecification().getClassName(),
-      logsDir, logsDir);
-
-    scriptWriter.flush();
-
-    // Expands the <LOG_DIR> placement holder to the log directory
-    return writer.toString().replace(ApplicationConstants.LOG_DIR_EXPANSION_VAR, logsDir);
   }
 }
 

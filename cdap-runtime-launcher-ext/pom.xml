@@ -39,11 +39,20 @@
       <artifactId>google-cloud-dataproc</artifactId>
       <version>0.116.0</version>
     </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <!-- required by com.google.auth:google-auth-library-oauth2-http,
+           but set to 0.13.0 by google-cloud-dataproc for some reason -->
+      <version>20.0</version>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.5</version>
     </dependency>
+
   </dependencies>
 
   <profiles>

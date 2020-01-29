@@ -16,19 +16,31 @@
 
 package io.cdap.cdap.internal.app.runtime.distributed.launcher;
 
-import io.cdap.cdap.internal.app.runtime.distributed.WorkerTwillRunnable;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.twill.api.TwillController;
-import org.apache.twill.api.TwillRunnerService;
-import org.apache.twill.api.logging.PrinterLogHandler;
-import org.apache.twill.filesystem.FileContextLocationFactory;
-import org.apache.twill.filesystem.LocationFactory;
-import org.apache.twill.yarn.YarnTwillRunnerService;
+import org.apache.twill.internal.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.util.concurrent.ExecutionException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 /**
  *
@@ -36,27 +48,232 @@ import java.util.concurrent.ExecutionException;
 public class TestLauncher {
   private static final Logger LOG = LoggerFactory.getLogger(TestLauncher.class);
 
-  public void doMain() throws Exception {
-    runnerMethod();
+  public static void main(String[] args) throws Exception {
+    ClassLoader cl = TestLauncher.class.getClassLoader();
+    if (!(cl instanceof URLClassLoader)) {
+      throw new RuntimeException("Expect it to be a URLClassLoader");
+    }
+
+    URL[] urls = ((URLClassLoader) cl).getURLs();
+    URL thisURL = TestLauncher.class.getClassLoader().getResource(TestLauncher.class.getName()
+                                                                    .replace('.', '/') + ".class");
+    if (thisURL == null) {
+      throw new RuntimeException("Failed to find the resource for main class");
+    }
+    if ("jar".equals(thisURL.getProtocol())) {
+      String path = thisURL.getFile();
+      thisURL = URI.create(path.substring(0, path.indexOf("!/"))).toURL();
+    }
+
+    LOG.info("This URL: {}", thisURL);
+
+    File appJarDir = new File(Constants.Files.APPLICATION_JAR);
+    File twillJarDir = new File(Constants.Files.TWILL_JAR);
+    File resourceJarDir = new File(Constants.Files.RESOURCES_JAR);
+
+    // add app jar, twill jar, resource jar
+    URL[] classpath = createClasspath(appJarDir, twillJarDir, resourceJarDir);
+    List<URL> classpathList = new ArrayList<>(Arrays.asList(classpath));
+    classpathList.addAll(Arrays.asList(urls));
+
+    // add this url
+    Deque<URL> queue = new LinkedList<>(classpathList);
+    queue.addFirst(thisURL);
+
+    for (URL url : urls) {
+      LOG.info("URL: {}", url);
+      if (thisURL.equals(url)) {
+        if (url.toString().endsWith(".jar")) {
+          addAll(url, queue);
+          queue.addFirst(url);
+        }
+      } else {
+        queue.addLast(url);
+      }
+    }
+
+    LOG.info("Classpath URLs: {}", queue);
+
+    URLClassLoader newCL = new URLClassLoader(queue.toArray(new URL[0]), cl.getParent());
+    Thread.currentThread().setContextClassLoader(newCL);
+    Class<?> cls = newCL.loadClass(TestRunner.class.getName());
+    Method method = cls.getMethod("runnerMethod");
+
+    LOG.info("Invoking runnerMethod");
+    method.invoke(cls.newInstance());
+    System.out.println("Main class completed.");
+    System.out.println("Launcher completed");
+
+
+//    // Create ClassLoader
+//    Deque<URL> queue = new LinkedList<>();
+//
+//    ClassLoader cl = TestLauncher.class.getClassLoader();
+//    if (!(cl instanceof URLClassLoader)) {
+//      throw new RuntimeException("Expect it to be a URLClassLoader");
+//    }
+//
+//    for (URL clUrl : classpath) {
+//      queue.addLast(clUrl);
+//    }
+//
+//    System.out.println("Classpath URLs: " + queue);
+//
+//    URLClassLoader newCL = new URLClassLoader(queue.toArray(new URL[0]), cl);
+//    for (URL url : newCL.getURLs()) {
+//      System.out.println("#### URL : " + url.getFile());
+//    }
+//    Thread.currentThread().setContextClassLoader(newCL);
+//    System.out.println("new classloader set");
+//    Class<?> cls = newCL.loadClass(TestRunner.class.getName());
+//    Method method = cls.getMethod("runnerMethod");
+//
+//    LOG.info("Invoking runnerMethod");
+//    method.invoke(cls.newInstance());
+//
+//    System.out.println("Main class completed.");
+//    System.out.println("Launcher completed");
   }
 
-  private void runnerMethod() throws ExecutionException {
-    YarnConfiguration conf = new YarnConfiguration();
-    LocationFactory locationFactory = new FileContextLocationFactory(conf);
-    TwillRunnerService twillRunner = new YarnTwillRunnerService(conf, "localhost:2181", locationFactory);
-    twillRunner.start();
+  private static URL[] createClasspath(File appJarDir, File twillJarDir, File resourceJarDir) throws IOException {
+    List<URL> urls = new ArrayList<>();
 
-    try {
-      // TODO get this from environemnt
-      TwillController controller = twillRunner.prepare(new WorkerTwillRunnable("TestWorker"))
-        .addLogHandler(new PrinterLogHandler(new PrintWriter(System.out, true)))
-        .start();
+    // For backward compatibility, sort jars from twill and jars from application together
+    // With TWILL-179, this will change as the user can have control on how it should be.
+    List<File> libJarFiles = listJarFiles(new File(appJarDir, "lib"), new ArrayList<File>());
+    Collections.sort(listJarFiles(new File(twillJarDir, "lib"), libJarFiles), new Comparator<File>() {
+      @Override
+      public int compare(File file1, File file2) {
+        // order by the file name only. If the name are the same, the one in application jar will prevail.
+        return file1.getName().compareTo(file2.getName());
+      }
+    });
 
-      LOG.info("Job submitted");
-      controller.awaitTerminated();
-      LOG.info("Job completed");
-    } finally {
-      twillRunner.stop();
+    // Add the app jar, resources jar and twill jar directories to the classpath as well
+    for (File dir : Arrays.asList(appJarDir, twillJarDir)) {
+      urls.add(dir.toURI().toURL());
+      urls.add(new File(dir, "classes").toURI().toURL());
+    }
+
+    urls.add(new File(resourceJarDir, "resources").toURI().toURL());
+
+
+    // Add all lib jars
+    for (File jarFile : libJarFiles) {
+      urls.add(jarFile.toURI().toURL());
+    }
+
+//    List<URL> toExpand = new ArrayList<>(test);
+//    toExpand.add(twillJarDir.toURI().toURL());
+//    toExpand.add(appJarDir.toURI().toURL());
+//
+//    for (URL url : toExpand) {
+//      System.out.println("URL: " + url);
+//      if (url.toString().endsWith(".jar")) {
+//        addAll(url, deque);
+//        deque.addFirst(url);
+//      } else {
+//        deque.addLast(url);
+//      }
+//    }
+//
+//
+
+    return urls.toArray(new URL[urls.size()]);
+  }
+
+  private static List<URL> addClassPathsToList(List<URL> urls, File classpathFile) throws IOException {
+    // TODO figure out a way to get classpath file and Set environment variable on dataproc job
+    List<URL> testUrls = new ArrayList<>();
+    String line = System.getenv("$HADOOP_CLASSPATH");
+    if (line != null) {
+      for (String path : expand(line).split(":")) {
+        testUrls.addAll(getClassPaths(path.trim()));
+      }
+    }
+    return testUrls;
+  }
+
+  private static Collection<URL> getClassPaths(String path) throws MalformedURLException {
+    String classpath = expand(path);
+    if (classpath.endsWith("/*")) {
+      // Grab all .jar files
+      File dir = new File(classpath.substring(0, classpath.length() - 2));
+      List<File> files = listJarFiles(dir, new ArrayList<File>());
+      Collections.sort(files);
+      if (files.isEmpty()) {
+        return singleItem(dir.toURI().toURL());
+      }
+
+      List<URL> result = new ArrayList<>(files.size());
+      for (File file : files) {
+        if (file.getName().endsWith(".jar")) {
+          result.add(file.toURI().toURL());
+        }
+      }
+      return result;
+    } else {
+      return singleItem(new File(classpath).toURI().toURL());
+    }
+  }
+
+  private static Collection<URL> singleItem(URL url) {
+    List<URL> result = new ArrayList<>(1);
+    result.add(url);
+    return result;
+  }
+
+  private static String expand(String value) {
+    String result = value;
+    for (Map.Entry<String, String> entry : System.getenv().entrySet()) {
+      result = result.replace("$" + entry.getKey(), entry.getValue());
+      result = result.replace("${" + entry.getKey() + "}", entry.getValue());
+    }
+    LOG.info("Expand finished: {}", result);
+    return result;
+  }
+
+  /**
+   * Populates a list of {@link File} under the given directory that has ".jar" as extension.
+   */
+  private static List<File> listJarFiles(File dir, List<File> result) {
+    File[] files = dir.listFiles();
+    if (files == null || files.length == 0) {
+      return result;
+    }
+    for (File file : files) {
+      if (file.getName().endsWith(".jar")) {
+        result.add(file);
+      }
+    }
+    return result;
+  }
+
+  private static void addAll(URL jarURL, Deque<URL> urls) throws IOException {
+    Path tempDir = Files.createTempDirectory("expanded.jar");
+    List<URL> depJars = new ArrayList<>();
+    try (JarInputStream jarInput = new JarInputStream(jarURL.openStream())) {
+      JarEntry entry = jarInput.getNextJarEntry();
+      while (entry != null) {
+        if (entry.getName().endsWith(".jar")) {
+          String name = entry.getName();
+          int idx = name.lastIndexOf("/");
+          if (idx >= 0) {
+            name = name.substring(idx + 1);
+          }
+          Path jarPath = tempDir.resolve(name);
+
+          LOG.info("Jar entry {} is expanded to {}", entry.getName(), jarPath);
+          Files.copy(jarInput, jarPath);
+          depJars.add(jarPath.toUri().toURL());
+        }
+        entry = jarInput.getNextJarEntry();
+      }
+    }
+
+    ListIterator<URL> itor = depJars.listIterator(depJars.size());
+    while (itor.hasPrevious()) {
+      urls.addFirst(itor.previous());
     }
   }
 }
