@@ -107,7 +107,7 @@ class CDAP extends Component {
       authorizationFailed: false,
       loading: true,
       pageLevelError: false,
-      retrievingNs: false,
+      isNamespaceFetchInFlight: false,
     };
     this.eventEmitter = ee(ee);
     this.eventEmitter.on(WINDOW_ON_FOCUS, this.onWindowFocus);
@@ -142,7 +142,7 @@ class CDAP extends Component {
   };
 
   retrieveNamespace = () => {
-    this.setState({ retrievingNs: true });
+    this.setState({ isNamespaceFetchInFlight: true });
     this.namespaceSub = MyNamespaceApi.list().subscribe(
       (res) => {
         if (res.length > 0) {
@@ -158,11 +158,11 @@ class CDAP extends Component {
           // which indicates she/he have no authorization for any namesapce in the system.
           this.eventEmitter.emit(globalEvents.NONAMESPACE);
         }
-        this.setState({ retrievingNs: false });
+        this.setState({ isNamespaceFetchInFlight: false });
       },
       (err) => {
         this.eventEmitter.emit(globalEvents.PAGE_LEVEL_ERROR, err);
-        this.setState({ retrievingNs: false });
+        this.setState({ isNamespaceFetchInFlight: false });
       }
     );
   };
@@ -282,12 +282,12 @@ class CDAP extends Component {
             <AppHeader />
             <LoadingIndicator />
             <StatusAlertMessage />
-            <If condition={this.state.retrievingNs}>
+            <If condition={this.state.isNamespaceFetchInFlight}>
               <div className="loading-svg">
                 <LoadingSVG />
               </div>
             </If>
-            <If condition={!this.state.retrievingNs}>
+            <If condition={!this.state.isNamespaceFetchInFlight}>
               <If
                 condition={this.state.pageLevelError && this.state.pageLevelError.errorCode === 404}
               >
